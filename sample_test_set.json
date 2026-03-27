@@ -1,0 +1,32 @@
+[
+  {
+    "question": "如何查看 Linux 系统的 CPU 使用率？",
+    "standard_answer": "在 Linux 系统中，可以使用以下命令查看 CPU 使用率：\n1. top - 实时显示系统整体状态和进程信息\n2. htop - 增强版的 top，界面更友好\n3. mpstat - 显示每个 CPU 核心的使用情况\n4. vmstat - 显示系统整体性能统计\n\n最常用的是 top 命令，直接在终端输入 top 即可。",
+    "keywords": ["CPU", "top", "htop", "mpstat", "vmstat"],
+    "category": "监控告警"
+  },
+  {
+    "question": "如何检查磁盘空间使用情况？",
+    "standard_answer": "检查磁盘空间的常用命令：\n1. df -h - 显示各分区的磁盘使用情况（-h 表示人类可读格式）\n2. du -sh <目录> - 查看指定目录的总大小\n3. du -h --max-depth=1 - 查看当前目录下各子目录大小\n4. ncdu - 交互式磁盘使用分析工具（需要安装）",
+    "keywords": ["磁盘", "df", "du", "磁盘空间"],
+    "category": "监控告警"
+  },
+  {
+    "question": "服务器负载高怎么办？",
+    "standard_answer": "当服务器负载高时，建议按以下步骤排查：\n\n1. 首先使用 top/htop 查看是哪个进程占用资源多\n2. 检查 load average，确认是 CPU 密集还是 IO 密集\n3. 使用 vmstat/iostat 查看 IO 情况\n4. 检查是否有异常的定时任务在运行\n5. 查看系统日志 /var/log/messages 或 dmesg\n6. 如发现异常进程，可考虑使用 kill 命令终止\n\n紧急情况下可重启相关服务或服务器。",
+    "keywords": ["负载", "load average", "top", "性能问题"],
+    "category": "故障排查"
+  },
+  {
+    "question": "如何查看服务状态？",
+    "standard_answer": "使用 systemd 的系统可以用以下命令：\n\n查看服务状态：\nsystemctl status <服务名>\n\n启动服务：\nsystemctl start <服务名>\n\n停止服务：\nsystemctl stop <服务名>\n\n重启服务：\nsystemctl restart <服务名>\n\n设置开机自启：\nsystemctl enable <服务名>\n\n查看所有运行中的服务：\nsystemctl list-units --type=service --state=running",
+    "keywords": ["systemctl", "service", "服务", "systemd"],
+    "category": "日常操作"
+  },
+  {
+    "question": "如何查看 Nginx 访问日志？",
+    "standard_answer": "Nginx 日志通常位于以下位置：\n\n访问日志：\n- /var/log/nginx/access.log\n- /var/log/nginx/access.log.1（旧日志）\n\n错误日志：\n- /var/log/nginx/error.log\n\n常用查看命令：\n\n实时查看：\ntail -f /var/log/nginx/access.log\n\n查看最近 100 行：\ntail -n 100 /var/log/nginx/access.log\n\n搜索特定内容：\ngrep '500' /var/log/nginx/access.log\n\n统计访问量：\nawk '{print $1}' /var/log/nginx/access.log | sort | uniq -c | sort -nr",
+    "keywords": ["Nginx", "日志", "access.log", "tail", "grep"],
+    "category": "日常操作"
+  }
+]

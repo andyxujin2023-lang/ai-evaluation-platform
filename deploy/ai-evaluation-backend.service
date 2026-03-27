@@ -1,0 +1,26 @@
+# Systemd 服务配置文件
+# 将此文件复制到 /etc/systemd/system/ai-evaluation-backend.service
+
+[Unit]
+Description=AI Evaluation Platform Backend
+After=network.target
+
+[Service]
+Type=notify
+User=www-data
+Group=www-data
+WorkingDirectory=/var/www/ai-evaluation-platform/backend
+Environment="PATH=/var/www/ai-evaluation-platform/backend/venv/bin"
+ExecStart=/var/www/ai-evaluation-platform/backend/venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8000 --workers 4
+Restart=always
+RestartSec=10
+
+# 安全设置
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/var/www/ai-evaluation-platform/backend
+
+[Install]
+WantedBy=multi-user.target
