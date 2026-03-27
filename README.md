@@ -2,6 +2,9 @@
 
 一个用于评测 Dify 运维智能体能力的自动化测试平台。
 
+##系统界面
+<img width="2127" height="1149" alt="image" src="https://github.com/user-attachments/assets/e33a5218-a898-4bca-939b-4380d0d3d1f9" />
+
 ## 功能特性
 
 - 📝 **测试集管理** - 支持 JSON 格式导入，增删改查测试问题
