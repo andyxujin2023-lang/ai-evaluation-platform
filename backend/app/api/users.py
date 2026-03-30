@@ -206,13 +206,9 @@ def update_user(
             updates.append("organization_id = ?")
             params.append(user_data.organization_id)
         if user_data.password is not None:
-            # 检查要修改的用户是不是admin
-            if existing_user["name"] == "admin" or existing_user["email"] == "admin@example.com":
-                # admin用户的密码只有自己能修改
-                if user_id != current_user["user_id"]:
-                    raise HTTPException(status_code=403, detail="admin的密码只能由admin自己修改")
-            # 其他情况：管理员可以修改其他用户的密码，用户可以修改自己的密码
-            elif user_id != current_user["user_id"] and current_user["role"] != "admin":
+            # admin可以修改所有用户的密码，包括自己的
+            # 普通用户只能修改自己的密码
+            if user_id != current_user["user_id"] and current_user["role"] != "admin":
                 raise HTTPException(status_code=403, detail="只能修改自己的密码")
             updates.append("hashed_password = ?")
             params.append(hash_password(user_data.password))

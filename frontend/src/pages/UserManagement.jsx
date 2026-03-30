@@ -236,15 +236,17 @@ function UserManagement() {
                   </td>
                   <td className="px-6 py-4 text-right">
                     <div className="flex items-center justify-end gap-2">
+                      {/* admin可以看到所有用户的重置密码按钮，包括自己的 */}
+                      <button
+                        onClick={() => handleResetPassword(user)}
+                        className="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                        title="重置密码"
+                      >
+                        <Key className="w-5 h-5" />
+                      </button>
+                      {/* 编辑和删除按钮只能对非当前用户显示 */}
                       {user.id !== currentUser?.id && (
                         <>
-                          <button
-                            onClick={() => handleResetPassword(user)}
-                            className="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
-                            title="重置密码"
-                          >
-                            <Key className="w-5 h-5" />
-                          </button>
                           <button
                             onClick={() => handleEditUser(user)}
                             className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
