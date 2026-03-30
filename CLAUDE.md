@@ -4,13 +4,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is an **AI Operations Evaluation Platform (AIOps Evaluation Platform)** - a system for evaluating Dify operation intelligent agent capabilities. The platform is fully implemented with both backend and frontend components.
+This is an **AI Operations Evaluation Platform (AIOps Evaluation Platform)** - a system for evaluating Dify operation intelligent agent capabilities. The platform is fully implemented with both backend and frontend components, and includes user authentication and organization-based data isolation.
 
 ## Technology Stack
 
 - **Backend**: Python + FastAPI + SQLite
 - **Frontend**: React 18 + Tailwind CSS + ECharts + Vite
 - **External APIs**: Dify API (for answers), Tongyi Qianwen API (for scoring)
+- **Authentication**: Session-based cookies with bcrypt password hashing
 
 ## Code Architecture
 
@@ -22,7 +23,8 @@ backend/
 │   ├── main.py              # FastAPI application entry point
 │   ├── core/
 │   │   ├── config.py        # Settings management (Pydantic)
-│   │   └── database.py      # SQLite connection and initialization
+│   │   ├── database.py      # SQLite connection and initialization
+│   │   └── auth.py          # Authentication core (password hashing, sessions)
 │   ├── models/
 │   │   └── schemas.py       # Pydantic models for API requests/responses
 │   ├── services/
@@ -31,11 +33,14 @@ backend/
 │   │   ├── test_engine.py       # Automated test execution
 │   │   └── config_service.py    # System config management
 │   └── api/
+│       ├── auth.py          # Authentication endpoints (login/register/logout)
+│       ├── users.py         # User management endpoints (admin only)
 │       ├── datasets.py       # Test question CRUD
 │       ├── test_batches.py   # Test batch management
 │       ├── test_runs.py      # Test execution and reports
 │       └── config.py         # System config endpoints
-├── init_db.sql               # Database schema
+├── init_db.sql               # Database schema (includes auth tables)
+├── migrate_add_auth.py       # Migration script for adding auth to existing DB
 ├── requirements.txt
 └── .env.example
 ```
@@ -45,9 +50,18 @@ backend/
 ```
 frontend/
 ├── src/
-│   ├── App.jsx              # Main app with routing
+│   ├── App.jsx              # Main app with routing and auth protection
 │   ├── main.jsx             # Entry point
+│   ├── api/
+│   │   └── index.js         # API client with auth handling
+│   ├── contexts/
+│   │   └── AuthContext.jsx  # Authentication context provider
+│   ├── components/
+│   │   └── ProtectedRoute.jsx  # Route protection wrapper
 │   └── pages/
+│       ├── Login.jsx        # Login page
+│       ├── Register.jsx     # Registration page
+│       ├── UserManagement.jsx  # User management (admin only)
 │       ├── Dashboard.jsx    # Overview dashboard
 │       ├── TestBatches.jsx  # Test batch management
 │       ├── Datasets.jsx     # Test set management
@@ -62,9 +76,12 @@ frontend/
 ### Database Schema
 
 Key tables:
-- `test_batches` - Groups of test questions
-- `datasets` - Individual test questions (linked to batches)
-- `test_runs` - Test execution sessions
+- `organizations` - Organizations/teams for data isolation
+- `users` - User accounts with roles (admin/user) and organization links
+- `sessions` - Session tokens for authentication (7-day expiry)
+- `test_batches` - Groups of test questions (organization-scoped)
+- `datasets` - Individual test questions (organization-scoped)
+- `test_runs` - Test execution sessions (organization-scoped)
 - `test_results` - Individual question results with 4-dimensional scoring
 - `test_logs` - Detailed execution logs
 - `system_config` - API keys and settings (stored in DB)
@@ -79,8 +96,11 @@ pip install -r requirements.txt
 cp .env.example .env
 # Edit .env with API keys or configure via UI later
 
-# Initialize database (runs automatically on app startup)
-python init_db.py
+# Initialize fresh database (runs automatically on app startup)
+# Includes auth tables
+
+# Or migrate existing database to add auth
+python migrate_add_auth.py
 
 # Run development server
 python -m uvicorn app.main:app --reload --host 0.0.0.0 --port 8000
@@ -104,11 +124,36 @@ npm run build
 
 Frontend runs at http://localhost:5173 (Vite default)
 
+## Authentication System
+
+### Key Features
+- User registration with organization creation (first user is admin)
+- Session-based authentication via HTTP-only cookies
+- Role-based access control (admin/user roles)
+- Organization-level data isolation (users can only access their org's data)
+- Protected API endpoints using FastAPI dependencies
+
+### Auth Endpoints
+- `POST /api/auth/register` - Register new user and organization
+- `POST /api/auth/login` - User login
+- `POST /api/auth/logout` - User logout
+- `GET /api/auth/me` - Get current user info
+- `GET /api/users` - List users (admin only)
+- `PUT /api/users/{id}/role` - Update user role (admin only)
+- `PUT /api/users/{id}/active` - Toggle user active status (admin only)
+
+### Important Notes
+- All API endpoints except `/api/auth/register` and `/api/auth/login` require authentication
+- First registered user automatically becomes admin of their organization
+- Sessions expire after 7 days
+- Passwords are hashed using bcrypt
+- Data isolation is enforced at the API layer via `organization_id` filtering
+
 ## Key API Endpoints
 
-- `GET /api/test-batches` - List test batches
+- `GET /api/test-batches` - List test batches (org-scoped)
 - `POST /api/test-batches` - Create test batch
-- `GET /api/datasets` - List test questions
+- `GET /api/datasets` - List test questions (org-scoped)
 - `POST /api/datasets/import` - Import JSON test set
 - `POST /api/test-runs` - Start new test run
 - `GET /api/test-runs/{id}/progress` - Get test progress
@@ -130,3 +175,5 @@ Scores are calculated with temperature=0 for reproducibility:
 - Test runs execute asynchronously, poll `/progress` endpoint for status
 - All database interactions use SQLite with connection pooling via context manager
 - Frontend uses enterprise-style dark theme similar to Datadog/Grafana
+- All data is organization-isolated - users must register/login first
+- First user to register becomes the organization admin

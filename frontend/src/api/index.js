@@ -5,7 +5,33 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
+
+export const authApi = {
+  login: (data) => api.post('/auth/login', data),
+  register: (data) => api.post('/auth/register', data),
+  logout: () => api.post('/auth/logout'),
+  getMe: () => api.get('/auth/me'),
+  switchOrganization: (orgId) => api.post(`/auth/switch-organization/${orgId}`),
+};
+
+export const usersApi = {
+  listUsers: () => api.get('/users'),
+  getUser: (id) => api.get(`/users/${id}`),
+  createUser: (data) => api.post('/users', data),
+  updateUser: (id, data) => api.put(`/users/${id}`, data),
+  deleteUser: (id) => api.delete(`/users/${id}`),
+};
+
+export const organizationsApi = {
+  listOrganizations: () => api.get('/organizations'),
+  getMyOrganization: () => api.get('/organizations/my'),
+  getOrganization: (id) => api.get(`/organizations/${id}`),
+  createOrganization: (data) => api.post('/organizations', data),
+  updateOrganization: (id, data) => api.put(`/organizations/${id}`, data),
+  deleteOrganization: (id) => api.delete(`/organizations/${id}`),
+};
 
 export const datasetsApi = {
   listQuestions: (params) => api.get('/datasets', { params }),

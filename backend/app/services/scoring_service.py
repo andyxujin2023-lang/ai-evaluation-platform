@@ -1,14 +1,13 @@
 import httpx
 import json
 from typing import Optional
-from ..core.config import get_config_with_db
 from ..models.schemas import ScoringResult
 
 
 class ScoringService:
     def __init__(self, api_key: Optional[str] = None, model: Optional[str] = None):
-        self.api_key = api_key or get_config_with_db("TONGYI_API_KEY", "")
-        self.model = model or get_config_with_db("TONGYI_MODEL", "qwen-max")
+        self.api_key = api_key or ""
+        self.model = model or "qwen-max"
 
     async def score_answer(
         self,
