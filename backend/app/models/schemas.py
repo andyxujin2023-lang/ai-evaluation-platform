@@ -46,7 +46,6 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
-    organization_id: Optional[str] = None
 
 
 class UserLogin(BaseModel):
