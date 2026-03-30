@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
-import { Plus, Eye, Trash2, Play, AlertCircle, CheckCircle, Clock, Folder } from 'lucide-react'
+import { Plus, Eye, Trash2, Play, AlertCircle, CheckCircle, Clock, Folder, MessageSquare } from 'lucide-react'
 import { testRunsApi, testBatchesApi } from '../api'
+import PreviewChatModal from '../components/PreviewChatModal'
 
 function TestRuns() {
   const [testRuns, setTestRuns] = useState([])
   const [batches, setBatches] = useState([])
   const [loading, setLoading] = useState(true)
   const [showModal, setShowModal] = useState(false)
+  const [showPreviewModal, setShowPreviewModal] = useState(false)
   const [formData, setFormData] = useState({ name: '', description: '', batch_id: '' })
   const [startingTest, setStartingTest] = useState(null)
 
@@ -107,13 +109,22 @@ function TestRuns() {
           <h1 className="text-3xl font-bold text-white mb-2">测试运行</h1>
           <p className="text-dark-400">管理和查看测试运行</p>
         </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
-        >
-          <Play className="w-5 h-5" />
-          开始新测试
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowPreviewModal(true)}
+            className="px-6 py-3 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors flex items-center gap-2"
+          >
+            <MessageSquare className="w-5 h-5" />
+            预览
+          </button>
+          <button
+            onClick={() => setShowModal(true)}
+            className="px-6 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center gap-2"
+          >
+            <Play className="w-5 h-5" />
+            开始新测试
+          </button>
+        </div>
       </div>
 
       <div className="bg-dark-800 rounded-xl border border-dark-700 overflow-hidden">
@@ -289,6 +300,12 @@ function TestRuns() {
           </div>
         </div>
       )}
+
+      {/* 预览聊天窗口 */}
+      <PreviewChatModal
+        isOpen={showPreviewModal}
+        onClose={() => setShowPreviewModal(false)}
+      />
     </div>
   )
 }

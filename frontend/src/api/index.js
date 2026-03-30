@@ -94,4 +94,10 @@ export const configApi = {
   updateConfigsBatch: (configs) => api.post('/config/batch', { configs }),
 };
 
+export const previewApi = {
+  chat: (data) => api.post('/preview/chat', data),
+  getConversation: (conversationId) => api.get(`/preview/chat/${conversationId}`),
+  clearConversation: (conversationId) => api.delete(`/preview/chat/${conversationId}`),
+};
+
 export default api;

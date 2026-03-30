@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .core.config import get_settings
 from .core.database import init_database
-from .api import datasets, test_runs, test_batches, config, auth, users, organizations
+from .api import datasets, test_runs, test_batches, config, auth, users, organizations, preview
 
 settings = get_settings()
 
@@ -27,6 +27,7 @@ app.include_router(datasets.router)
 app.include_router(test_runs.router)
 app.include_router(test_batches.router)
 app.include_router(config.router)
+app.include_router(preview.router)
 
 
 @app.on_event("startup")
