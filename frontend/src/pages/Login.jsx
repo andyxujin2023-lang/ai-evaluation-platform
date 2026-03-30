@@ -1,10 +1,11 @@
 import React, { useState } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { Activity, Mail, Lock, LogIn, UserPlus } from 'lucide-react'
+import { Activity, Mail, Lock, LogIn, UserPlus, User } from 'lucide-react'
 import { useAuth } from '../contexts/AuthContext'
 
 function Login() {
-  const [formData, setFormData] = useState({ email: '', password: '' })
+  const [loginType, setLoginType] = useState('username') // 'email' or 'username'
+  const [formData, setFormData] = useState({ account: '', password: '' })
   const [loading, setLoading] = useState(false)
   const { login, error } = useAuth()
   const navigate = useNavigate()
@@ -16,7 +17,7 @@ function Login() {
     e.preventDefault()
     setLoading(true)
     try {
-      await login(formData.email, formData.password)
+      await login(formData.account, formData.password)
       navigate(from, { replace: true })
     } catch (err) {
       console.error('Login failed:', err)
@@ -37,6 +38,34 @@ function Login() {
         </div>
 
         <div className="bg-dark-800 border border-dark-700 rounded-xl p-8">
+          {/* 登录类型切换 */}
+          <div className="flex mb-6 bg-dark-700 rounded-lg p-1">
+            <button
+              type="button"
+              onClick={() => setLoginType('username')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                loginType === 'username'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-dark-300 hover:text-white'
+              }`}
+            >
+              <User className="w-4 h-4" />
+              用户名登录
+            </button>
+            <button
+              type="button"
+              onClick={() => setLoginType('email')}
+              className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors flex items-center justify-center gap-2 ${
+                loginType === 'email'
+                  ? 'bg-primary-600 text-white'
+                  : 'text-dark-300 hover:text-white'
+              }`}
+            >
+              <Mail className="w-4 h-4" />
+              邮箱登录
+            </button>
+          </div>
+
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
               <div className="p-3 bg-red-500/10 border border-red-500/30 rounded-lg text-red-300 text-sm">
@@ -46,17 +75,21 @@ function Login() {
 
             <div>
               <label className="block text-sm font-medium text-dark-300 mb-2">
-                邮箱地址
+                {loginType === 'email' ? '邮箱地址' : '用户名'}
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+                {loginType === 'email' ? (
+                  <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+                ) : (
+                  <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-dark-500" />
+                )}
                 <input
-                  type="email"
+                  type={loginType === 'email' ? 'email' : 'text'}
                   required
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  value={formData.account}
+                  onChange={(e) => setFormData({ ...formData, account: e.target.value })}
                   className="w-full pl-10 pr-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500"
-                  placeholder="请输入邮箱"
+                  placeholder={loginType === 'email' ? '请输入邮箱' : '请输入用户名'}
                 />
               </div>
             </div>

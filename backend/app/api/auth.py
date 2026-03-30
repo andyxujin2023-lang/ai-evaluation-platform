@@ -23,10 +23,85 @@ from ..models.schemas import (
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
+# 默认组织配置
+DEFAULT_ORG_ID = "default-org"
+DEFAULT_ORG_NAME = "默认组织"
+DEFAULT_ORG_SLUG = "default"
+
+# 默认管理员账户配置
+DEFAULT_ADMIN_EMAIL = "admin@example.com"
+DEFAULT_ADMIN_NAME = "admin"
+DEFAULT_ADMIN_PASSWORD = "admin123"
+
 
 def generate_id() -> str:
     """生成唯一ID"""
     return secrets.token_urlsafe(16)
+
+
+def get_or_create_default_organization() -> str:
+    """获取或创建默认组织，返回组织ID"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # 检查默认组织是否存在
+        cursor.execute("SELECT id FROM organizations WHERE id = ?", (DEFAULT_ORG_ID,))
+        row = cursor.fetchone()
+        if row:
+            return DEFAULT_ORG_ID
+
+        # 创建默认组织
+        now = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            """
+            INSERT INTO organizations (id, name, slug, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?)
+            """,
+            (DEFAULT_ORG_ID, DEFAULT_ORG_NAME, DEFAULT_ORG_SLUG, now, now),
+        )
+        return DEFAULT_ORG_ID
+
+
+def get_or_create_default_admin(organization_id: str) -> dict:
+    """获取或创建默认管理员账户"""
+    with get_db_connection() as conn:
+        cursor = conn.cursor()
+        # 检查默认管理员是否存在
+        cursor.execute("SELECT * FROM users WHERE email = ?", (DEFAULT_ADMIN_EMAIL,))
+        row = cursor.fetchone()
+        if row:
+            return dict(row)
+
+        # 创建默认管理员
+        user_id = generate_id()
+        hashed_pw = hash_password(DEFAULT_ADMIN_PASSWORD)
+        now = datetime.now(timezone.utc).isoformat()
+        cursor.execute(
+            """
+            INSERT INTO users (id, email, hashed_password, name, organization_id, role, is_active, created_at, updated_at)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                DEFAULT_ADMIN_EMAIL,
+                hashed_pw,
+                DEFAULT_ADMIN_NAME,
+                organization_id,
+                "admin",
+                1,
+                now,
+                now,
+            ),
+        )
+        return {
+            "id": user_id,
+            "email": DEFAULT_ADMIN_EMAIL,
+            "name": DEFAULT_ADMIN_NAME,
+            "organization_id": organization_id,
+            "role": "admin",
+            "is_active": True,
+            "created_at": now,
+            "updated_at": now,
+        }
 
 
 def get_user_by_email(email: str) -> dict:
@@ -38,20 +113,13 @@ def get_user_by_email(email: str) -> dict:
         return dict(row) if row else None
 
 
-def create_organization(name: str, slug: str) -> str:
-    """创建组织，返回组织ID"""
-    org_id = generate_id()
-    now = datetime.now(timezone.utc).isoformat()
+def get_user_by_name(name: str) -> dict:
+    """通过用户名获取用户"""
     with get_db_connection() as conn:
         cursor = conn.cursor()
-        cursor.execute(
-            """
-            INSERT INTO organizations (id, name, slug, created_at, updated_at)
-            VALUES (?, ?, ?, ?, ?)
-            """,
-            (org_id, name, slug, now, now),
-        )
-    return org_id
+        cursor.execute("SELECT * FROM users WHERE name = ?", (name,))
+        row = cursor.fetchone()
+        return dict(row) if row else None
 
 
 def create_user(
@@ -109,40 +177,20 @@ def dict_to_user(user_dict: dict, native_organization_id: str = None) -> User:
 
 @router.post("/register", response_model=AuthResponse)
 def register(user_data: UserCreate, response: Response):
-    """用户注册"""
+    """用户注册 - 新用户自动加入默认组织，角色为普通用户"""
+    # 确保默认组织存在
+    org_id = get_or_create_default_organization()
+    # 确保默认管理员存在
+    get_or_create_default_admin(org_id)
+
     # 检查用户是否已存在
     existing_user = get_user_by_email(user_data.email)
     if existing_user:
         raise HTTPException(status_code=400, detail="该邮箱已被注册")
 
-    organization_id = user_data.organization_id
-
-    # 如果没有提供组织ID，创建新组织
-    if not organization_id:
-        if not user_data.organization_name or not user_data.organization_slug:
-            raise HTTPException(
-                status_code=400, detail="请提供组织名称和标识"
-            )
-        # 检查组织slug是否已存在
-        with get_db_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute(
-                "SELECT id FROM organizations WHERE slug = ?", (user_data.organization_slug,)
-            )
-            if cursor.fetchone():
-                raise HTTPException(status_code=400, detail="组织标识已被使用")
-        organization_id = create_organization(
-            user_data.organization_name, user_data.organization_slug
-        )
-        # 新组织的第一个用户是管理员
-        role = "admin"
-    else:
-        # 加入现有组织，默认是普通用户
-        role = "user"
-
-    # 创建用户
+    # 创建用户，固定为普通用户角色
     user_dict = create_user(
-        user_data.email, user_data.password, user_data.name, organization_id, role
+        user_data.email, user_data.password, user_data.name, org_id, "user"
     )
 
     # 创建会话并设置cookie
@@ -157,16 +205,27 @@ def register(user_data: UserCreate, response: Response):
 
 @router.post("/login", response_model=AuthResponse)
 def login(credentials: UserLogin, response: Response):
-    """用户登录"""
-    user_dict = get_user_by_email(credentials.email)
+    """用户登录 - 支持邮箱或用户名登录"""
+    # 确保默认组织和管理员存在（首次启动时初始化）
+    try:
+        org_id = get_or_create_default_organization()
+        get_or_create_default_admin(org_id)
+    except Exception:
+        pass  # 如果数据库还没初始化，忽略错误
+
+    # 先尝试用邮箱查找，再尝试用用户名查找
+    user_dict = get_user_by_email(credentials.account)
     if not user_dict:
-        raise HTTPException(status_code=401, detail="邮箱或密码错误")
+        user_dict = get_user_by_name(credentials.account)
+
+    if not user_dict:
+        raise HTTPException(status_code=401, detail="账户或密码错误")
 
     if not bool(user_dict["is_active"]):
         raise HTTPException(status_code=403, detail="账户已被禁用")
 
     if not verify_password(credentials.password, user_dict["hashed_password"]):
-        raise HTTPException(status_code=401, detail="邮箱或密码错误")
+        raise HTTPException(status_code=401, detail="账户或密码错误")
 
     # 创建会话并设置cookie
     session_token, expires_at = create_session(user_dict["id"])

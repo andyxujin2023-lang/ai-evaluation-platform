@@ -205,6 +205,9 @@ def update_user(
         if user_data.organization_id is not None and current_user["role"] == "admin":
             updates.append("organization_id = ?")
             params.append(user_data.organization_id)
+        if user_data.password is not None and current_user["role"] == "admin":
+            updates.append("hashed_password = ?")
+            params.append(hash_password(user_data.password))
 
         if updates:
             updates.append("updated_at = ?")

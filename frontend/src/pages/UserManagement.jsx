@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react'
-import { Users, UserPlus, Edit, Trash2, Shield, User, Mail, Building, Save, X } from 'lucide-react'
+import { Users, UserPlus, Edit, Trash2, Shield, User, Mail, Building, Save, X, Key } from 'lucide-react'
 import { usersApi, organizationsApi } from '../api'
 import { useAuth } from '../contexts/AuthContext'
 
@@ -9,8 +9,11 @@ function UserManagement() {
   const [loading, setLoading] = useState(true)
   const [showAddModal, setShowAddModal] = useState(false)
   const [showEditModal, setShowEditModal] = useState(false)
+  const [showResetPasswordModal, setShowResetPasswordModal] = useState(false)
   const [newUser, setNewUser] = useState({ name: '', email: '', password: '', organization_id: '' })
   const [editingUser, setEditingUser] = useState(null)
+  const [resettingUser, setResettingUser] = useState(null)
+  const [newPassword, setNewPassword] = useState('')
   const { user: currentUser } = useAuth()
 
   useEffect(() => {
@@ -73,6 +76,30 @@ function UserManagement() {
     } catch (error) {
       console.error('Failed to update user:', error)
       alert(error.response?.data?.detail || '更新用户失败')
+    }
+  }
+
+  const handleResetPassword = (user) => {
+    setResettingUser(user)
+    setNewPassword('')
+    setShowResetPasswordModal(true)
+  }
+
+  const handleSaveResetPassword = async (e) => {
+    e.preventDefault()
+    if (!newPassword || newPassword.length < 6) {
+      alert('密码长度至少6位')
+      return
+    }
+    try {
+      await usersApi.updateUser(resettingUser.id, { password: newPassword })
+      setShowResetPasswordModal(false)
+      setResettingUser(null)
+      setNewPassword('')
+      alert('密码重置成功')
+    } catch (error) {
+      console.error('Failed to reset password:', error)
+      alert(error.response?.data?.detail || '重置密码失败')
     }
   }
 
@@ -211,6 +238,13 @@ function UserManagement() {
                     <div className="flex items-center justify-end gap-2">
                       {user.id !== currentUser?.id && (
                         <>
+                          <button
+                            onClick={() => handleResetPassword(user)}
+                            className="p-2 text-yellow-400 hover:bg-yellow-500/10 rounded-lg transition-colors"
+                            title="重置密码"
+                          >
+                            <Key className="w-5 h-5" />
+                          </button>
                           <button
                             onClick={() => handleEditUser(user)}
                             className="p-2 text-blue-400 hover:bg-blue-500/10 rounded-lg transition-colors"
@@ -408,6 +442,66 @@ function UserManagement() {
                 >
                   <Save className="w-5 h-5" />
                   保存
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 重置密码模态框 */}
+      {showResetPasswordModal && resettingUser && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-dark-800 border border-dark-700 rounded-xl w-full max-w-md p-6">
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-white">重置密码</h3>
+              <button
+                onClick={() => {
+                  setShowResetPasswordModal(false)
+                  setResettingUser(null)
+                  setNewPassword('')
+                }}
+                className="p-2 text-dark-400 hover:text-white transition-colors"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+            <div className="mb-4 p-4 bg-dark-700/50 rounded-lg">
+              <p className="text-dark-300 text-sm">正在为用户重置密码：</p>
+              <p className="text-white font-medium">{resettingUser.name}</p>
+              <p className="text-dark-400 text-sm">{resettingUser.email}</p>
+            </div>
+            <form onSubmit={handleSaveResetPassword} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-dark-300 mb-2">新密码</label>
+                <input
+                  type="password"
+                  required
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  className="w-full px-4 py-3 bg-dark-700 border border-dark-600 rounded-lg text-white placeholder-dark-500 focus:outline-none focus:border-primary-500"
+                  placeholder="请输入新密码（至少6位）"
+                  minLength={6}
+                />
+              </div>
+              <div className="flex gap-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowResetPasswordModal(false)
+                    setResettingUser(null)
+                    setNewPassword('')
+                  }}
+                  className="flex-1 px-4 py-3 bg-dark-700 text-white rounded-lg hover:bg-dark-600 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-lg hover:bg-primary-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Key className="w-5 h-5" />
+                  重置密码
                 </button>
               </div>
             </form>

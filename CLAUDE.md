@@ -39,7 +39,7 @@ backend/
 │       ├── test_batches.py   # Test batch management
 │       ├── test_runs.py      # Test execution and reports
 │       └── config.py         # System config endpoints
-├── init_db.sql               # Database schema (includes auth tables)
+├── init_db.sql               # Database schema (includes auth tables, located in backend/)
 ├── migrate_add_auth.py       # Migration script for adding auth to existing DB
 ├── requirements.txt
 └── .env.example
@@ -62,6 +62,7 @@ frontend/
 │       ├── Login.jsx        # Login page
 │       ├── Register.jsx     # Registration page
 │       ├── UserManagement.jsx  # User management (admin only)
+│       ├── OrganizationManagement.jsx  # Organization management (admin only)
 │       ├── Dashboard.jsx    # Overview dashboard
 │       ├── TestBatches.jsx  # Test batch management
 │       ├── Datasets.jsx     # Test set management
@@ -160,6 +161,9 @@ Frontend runs at http://localhost:5173 (Vite default)
 - `GET /api/test-runs/{id}/report` - Get test report
 - `GET /api/config` - Get system config
 - `PUT /api/config` - Update system config
+- `GET /api/organizations` - List organizations (admin only)
+- `POST /api/organizations` - Create organization (admin only)
+- `PUT /api/organizations/{id}` - Update organization (admin only)
 
 ## Scoring Dimensions
 
@@ -177,3 +181,32 @@ Scores are calculated with temperature=0 for reproducibility:
 - Frontend uses enterprise-style dark theme similar to Datadog/Grafana
 - All data is organization-isolated - users must register/login first
 - First user to register becomes the organization admin
+
+## Deployment and Updates
+
+### Deployment
+- **Full deployment guide**: See `DEPLOY.md` for complete production deployment instructions
+- **Production deployment options**:
+  - Linux: systemd + Gunicorn + Nginx (recommended)
+  - Cross-platform: PM2 process manager
+  - Windows: IIS + Windows Service
+
+### Version Updates
+- **Update guide**: See `UPDATE.md` for detailed update instructions
+- **Automated update scripts**:
+  - Windows: Run `update.bat` for automated update process
+  - Linux: Run `update.sh` for automated update process
+- **Manual update steps**:
+  1. Backup database (critical!)
+  2. Pull latest code: `git pull origin master`
+  3. Run database migrations: `python migrate_*.py` scripts in order
+  4. Update dependencies: `pip install -r requirements.txt` (backend) and `npm install` (frontend)
+  5. Rebuild frontend: `npm run build`
+  6. Restart services
+
+### Database Migration Scripts
+Migration scripts are located in the `backend/` directory:
+- `migrate_add_auth.py` - Adds authentication tables (users, organizations, sessions)
+- `migrate_system_config.py` - Migrates system config to organization-level
+- `migrate_sessions.py` - Adds organization switching support to sessions
+- The `init_database()` function in `app/core/database.py` automatically handles migrations on startup when possible

@@ -98,7 +98,7 @@ function AppContent() {
                   <p className="text-xs text-dark-400 truncate">{user?.email}</p>
                 </div>
               </div>
-              {isAdmin && organizations.length > 0 && (
+              {isAdmin && (
                 <div className="relative">
                   <button
                     onClick={() => setShowOrgSwitcher(!showOrgSwitcher)}
@@ -107,7 +107,12 @@ function AppContent() {
                     <div className="flex items-center gap-2">
                       <Building className="w-4 h-4 text-dark-400" />
                       <span className="text-sm text-dark-200">
-                        {organizations.find(o => o.id === user?.organization_id)?.name || '选择组织'}
+                        {(() => {
+                          const currentOrg = organizations.find(o => o.id === user?.organization_id);
+                          if (currentOrg) return currentOrg.name;
+                          if (user?.organization_id === user?.native_organization_id || !user?.organization_id) return '默认组织';
+                          return '选择组织';
+                        })()}
                       </span>
                     </div>
                     <svg

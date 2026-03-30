@@ -30,7 +30,8 @@ export function AuthProvider({ children }) {
       setError(null)
       // 如果是管理员，加载组织列表
       if (res.data.role === 'admin') {
-        loadOrganizations()
+        // 延迟一点加载，确保用户状态已更新
+        setTimeout(() => loadOrganizations(), 100)
       }
     } catch (err) {
       setUser(null)
@@ -54,10 +55,10 @@ export function AuthProvider({ children }) {
     }
   }
 
-  const login = async (email, password) => {
+  const login = async (account, password) => {
     try {
       setError(null)
-      const res = await authApi.login({ email, password })
+      const res = await authApi.login({ account, password })
       setUser(res.data.user)
       return res.data
     } catch (err) {

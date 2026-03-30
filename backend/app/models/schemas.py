@@ -46,13 +46,10 @@ class UserCreate(BaseModel):
     email: EmailStr
     password: str
     name: str
-    organization_id: Optional[str] = None
-    organization_name: Optional[str] = None
-    organization_slug: Optional[str] = None
 
 
 class UserLogin(BaseModel):
-    email: EmailStr
+    account: str
     password: str
 
 
@@ -61,6 +58,7 @@ class UserUpdate(BaseModel):
     role: Optional[str] = None
     is_active: Optional[bool] = None
     organization_id: Optional[str] = None
+    password: Optional[str] = None
 
 
 class UserWithOrganization(User):
