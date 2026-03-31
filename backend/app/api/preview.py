@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Depends
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
 from ..core.auth import get_current_user
-from ..core.config import get_config_with_db
+from ..services.config_service import config_service
 from ..services.dify_service import DifyService
 from ..services.scoring_service import ScoringService
 from ..models.schemas import ScoringResult
@@ -50,8 +50,8 @@ async def preview_chat(
 ):
     """预览聊天 - 调用Dify智能体接口进行会话测试"""
     # 获取Dify配置
-    api_url = get_config_with_db("DIFY_API_URL")
-    api_key = get_config_with_db("DIFY_API_KEY")
+    api_url = config_service.get_real_config(current_user["organization_id"], "DIFY_API_URL") or "https://api.dify.ai/v1"
+    api_key = config_service.get_real_config(current_user["organization_id"], "DIFY_API_KEY")
 
     if not api_key:
         raise HTTPException(status_code=400, detail="请先配置Dify API密钥")
@@ -101,8 +101,8 @@ async def analyze_answer(
 ):
     """分析AI回答 - 调用通义千问进行匹配度分析"""
     # 获取通义千问配置
-    api_key = get_config_with_db("TONGYI_API_KEY")
-    model = get_config_with_db("TONGYI_MODEL") or "qwen-max"
+    api_key = config_service.get_real_config(current_user["organization_id"], "TONGYI_API_KEY")
+    model = config_service.get_real_config(current_user["organization_id"], "TONGYI_MODEL") or "qwen-max"
 
     if not api_key:
         raise HTTPException(status_code=400, detail="请先配置通义千问API密钥")
