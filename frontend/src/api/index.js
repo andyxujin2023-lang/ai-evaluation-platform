@@ -96,6 +96,7 @@ export const configApi = {
 
 export const previewApi = {
   chat: (data) => api.post('/preview/chat', data),
+  analyze: (data) => api.post('/preview/analyze', data),
   getConversation: (conversationId) => api.get(`/preview/chat/${conversationId}`),
   clearConversation: (conversationId) => api.delete(`/preview/chat/${conversationId}`),
 };

@@ -5,6 +5,8 @@ from typing import Optional, List, Dict, Any
 from ..core.auth import get_current_user
 from ..core.config import get_config_with_db
 from ..services.dify_service import DifyService
+from ..services.scoring_service import ScoringService
+from ..models.schemas import ScoringResult
 
 router = APIRouter(prefix="/api/preview", tags=["preview"])
 
@@ -24,6 +26,12 @@ class ChatRequest(BaseModel):
 class ChatResponse(BaseModel):
     answer: str
     conversation_id: str
+
+
+class AnalysisRequest(BaseModel):
+    question: str
+    standard_answer: str
+    ai_answer: str
 
 
 # 存储会话历史（内存存储，重启后丢失）
@@ -84,6 +92,31 @@ async def preview_chat(
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"调用Dify失败: {str(e)}")
+
+
+@router.post("/analyze", response_model=ScoringResult)
+async def analyze_answer(
+    request: AnalysisRequest,
+    current_user: dict = Depends(get_current_user),
+):
+    """分析AI回答 - 调用通义千问进行匹配度分析"""
+    # 获取通义千问配置
+    api_key = get_config_with_db("TONGYI_API_KEY")
+    model = get_config_with_db("TONGYI_MODEL") or "qwen-max"
+
+    if not api_key:
+        raise HTTPException(status_code=400, detail="请先配置通义千问API密钥")
+
+    try:
+        scoring_service = ScoringService(api_key=api_key, model=model)
+        result = await scoring_service.score_answer(
+            question=request.question,
+            standard_answer=request.standard_answer,
+            ai_answer=request.ai_answer
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"分析失败: {str(e)}")
 
 
 @router.get("/chat/{conversation_id}", response_model=List[ChatMessage])
